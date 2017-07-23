@@ -1,21 +1,18 @@
 const express = require(`express`);
-const expressHandlebars = require(`express-handlebars`);
+const exphbs = require(`express-handlebars`);
 const mongoose = require(`mongoose`);
 const bodyParser = require(`body-parser`);
 const cheerio = require(`cheerio`);
 const fetch = require(`node-fetch`);
+const path = require(`path`);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 
-const index = require(`./routes/html-routes.js`);
-const API = require(`./routes/api-routes.js`);
+const routes = require(`./routes/routes.js`);
 
-// Namespace html routes to root
-app.use('/', index);
-// Name space api routes
-app.use('/api', API);
+app.use('/', routes);
 
 // Sets up the Express app to handle data & cookie parsing
 app.use(bodyParser.json());
@@ -25,8 +22,8 @@ app.use(bodyParser.json({ type: `application/vnd.api+json` }));
 
 // Set handlebars as the view engine
 app.set(`views`, path.join(__dirname, `views`));
-app.engine(`handlebars`, hbs.engine);
-app.set(`view engine`, `handlebars`);
+//app.engine(`handlebars`, exphbs.engine);
+//app.set(`view engine`, `handlebars`);
 app.set(`partials`, __dirname + `views/partials`)
 
 // Servers public content such as CSS Javascript required in the HTML files

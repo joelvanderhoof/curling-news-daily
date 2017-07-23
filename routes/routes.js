@@ -6,6 +6,7 @@ const router = express.Router();
 // Load all articles plus their comments from the database
 router.route(`/`)
 .get((req, res) => {
+    let results =[];
         // Scrape 20 articles
         fetch(`https://hackernoon.com/`)
         //Scrape title, author, date published, and url
@@ -15,37 +16,53 @@ router.route(`/`)
         .then((body) =>{
             //console.log(body);
             let $ = cheerio.load(body);
-            let results =[];
 
             $(`.js-trackedPost`).each((i, element) => {
                 let articleURL = $(element).find(`a`).attr(`href`);
                 // Remove the '?' and following parameters from the URL
                 let n = articleURL.indexOf('?');
                 articleURL = articleURL.substring(0, n != -1 ? n : articleURL.length);
+                results[i] = {};
+                results[i].articleURL = articleURL;
 
-                    fetch(articleURL)
-                        .then((response) => {
-                            return response.text();
-                        })
-                        .then((body) => {
-                            console.log('checking page for title, author, and date published');
-                            let title = $(`header`).text();
-                            //title = decodeURI(title);
-                            let author = $(`header`).find(`a`).text();
-                            let datePublished = $(`header`).find(`time`).html();
-                            datePublished = datePublished.toString()
-
-                            // Add results to current results index
-                            results[i] = {};
-                            results[i].title = title;
-                            results[i].author = author;
-                            results[i].datePublished = datePublished;
-                            results[i].articleURL = articleURL;
-                            console.log(results[i]);
-                        })
             });
             return results;
         })
+        .then((results) => {
+            
+            // Get title, author, and date from each URL
+            results.forEach((result) => {
+                fetch(result.articleURL)
+                    .then((response) => {
+                            return response.text();
+                    })
+                    .then((body) => {
+                        let $ = cheerio.load(body);
+
+                        //console.log(body);
+                        let title = $(`h1`).text().trim();
+                        let author = $(`.postMetaLockup--authorWithBio`).find(`div`).find(`a`).text().trim();
+                        let datePublished = $(`time`).attr(`datetime`);
+                        //datePublished = datePublished.toString()
+                        let articleText = ``;
+
+                        // Get article text
+                        $(`.sectionLayout--insetColumn`).children(`p`).each((i, element) => {
+                            articleText += $(element).text();
+                            articleText += `\n`;
+                        });
+
+                        // Add results to current results index
+                        result.title = title;
+                        result.author = author;
+                        result.datePublished = datePublished;
+                        result.articleText = articleText;
+                        console.log(result);
+                        res.json(results);
+                    })
+            })
+        })
+        
 
         // Check db to see if each article has been saved already
 
